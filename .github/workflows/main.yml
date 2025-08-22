@@ -24,11 +24,31 @@ jobs:
     - name: Restore NuGet packages
       run: nuget restore Rememory.sln
     
-    - name: Build Solution
-      run: msbuild Rememory.sln /p:Configuration=Release /p:Platform="Any CPU"
+    - name: Build Solution (try x64)
+      run: msbuild Rememory.sln /p:Configuration=Release /p:Platform=x64
+      continue-on-error: true
+      id: build_x64
+    
+    - name: Build Solution (try x86)  
+      if: steps.build_x64.outcome == 'failure'
+      run: msbuild Rememory.sln /p:Configuration=Release /p:Platform=x86
+      continue-on-error: true
+      id: build_x86
+    
+    - name: Build Solution (default)
+      if: steps.build_x64.outcome == 'failure' && steps.build_x86.outcome == 'failure'
+      run: msbuild Rememory.sln /p:Configuration=Release
+    
+    - name: Find EXE files
+      run: Get-ChildItem -Recurse -Filter "*.exe" | Where-Object { $_.Directory.Name -eq "Release" }
     
     - name: Create ZIP
-      run: Compress-Archive -Path ./Rememory/bin/Release/* -DestinationPath Rememory-Setup.zip
+      run: |
+        $exeFiles = Get-ChildItem -Recurse -Filter "*.exe" | Where-Object { $_.Directory.Name -eq "Release" }
+        if ($exeFiles) {
+          $folder = $exeFiles[0].Directory.FullName
+          Compress-Archive -Path "$folder\*" -DestinationPath Rememory-Setup.zip
+        }
     
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
