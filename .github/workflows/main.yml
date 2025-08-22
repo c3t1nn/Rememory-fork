@@ -13,22 +13,22 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v4
     
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+    
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
     
-    - name: Restore
-      run: dotnet restore
+    - name: Restore NuGet packages
+      run: nuget restore Rememory.sln
     
-    - name: Build
-      run: dotnet build --configuration Release --no-restore
-    
-    - name: Publish
-      run: dotnet publish --configuration Release --output ./release --no-build
+    - name: Build Solution
+      run: msbuild Rememory.sln /p:Configuration=Release /p:Platform="Any CPU"
     
     - name: Create ZIP
-      run: Compress-Archive -Path ./release/* -DestinationPath Rememory-Setup.zip
+      run: Compress-Archive -Path ./Rememory/bin/Release/* -DestinationPath Rememory-Setup.zip
     
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
